@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Каракатица — настольная игра онлайн</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#081824;
+    --bg2:#0c2333;
+    --panel:#0f2b3d;
+    --panel2:#153a51;
+    --line:#1e4a63;
+    --sea:#cfe8ea;
+    --sea-line:#a9d2d6;
+    --path:#f4f9f6;
+    --ink:#0b2230;
+    --text:#eaf6f6;
+    --muted:#8fb4bf;
+    --coral:#ff6b4a;
+    --teal:#2dd4bf;
+    --gold:#ffc857;
+    --violet:#c77dff;
+    --danger:#e4572e;
+    --green:#38b975;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(1200px 800px at 50% -10%, #123549 0%, var(--bg) 55%, #050f17 100%);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:20px 12px 60px;
+  }
+  #app{width:100%;max-width:1080px;}
+  h1,h2,h3{font-family:'Fraunces',serif; margin:0;}
+  .brand{
+    display:flex; align-items:center; gap:14px; justify-content:center; margin-bottom:22px; flex-wrap:wrap;
+  }
+  .brand .logo{
+    font-size:42px; line-height:1; filter:drop-shadow(0 4px 10px rgba(45,212,191,.35));
+  }
+  .brand h1{
+    font-size:clamp(28px,5vw,44px); font-weight:900; letter-spacing:.5px;
+    background:linear-gradient(180deg,#fff, #bfe9e6 70%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .brand .sub{font-size:13px; color:var(--muted); letter-spacing:.14em; text-transform:uppercase; margin-top:-2px;}
+  .rules-btn{margin-left:6px;}
+  .rules-overlay{
+    position:fixed; inset:0; background:rgba(4,12,18,.6); z-index:70;
+    opacity:0; pointer-events:none; transition:opacity .28s ease;
+  }
+  .rules-overlay.open{opacity:1; pointer-events:auto;}
+  .rules-panel{
+    position:fixed; top:0; right:0; height:100vh; width:min(92vw,440px);
+    background:linear-gradient(180deg, var(--panel), var(--panel2));
+    border-left:1px solid var(--line); z-index:71; overflow-y:auto; padding:26px 22px 40px;
+    transform:translateX(100%); transition:transform .32s cubic-bezier(.2,.8,.2,1);
+    box-shadow:-24px 0 60px -20px rgba(0,0,0,.7);
+  }
+  .rules-panel.open{transform:translateX(0);}
+  .rules-panel h3{font-size:22px; margin-bottom:4px;}
+  .rules-panel h4{font-family:'Fraunces',serif; font-size:15px; color:var(--teal); margin:20px 0 8px;}
+  .rules-panel p{font-size:13.5px; line-height:1.7; color:#cfe3e6; margin:0 0 10px;}
+  .rules-panel .rules-close{
+    background:none; border:none; color:var(--muted); font-size:26px; cursor:pointer; line-height:1; padding:2px 6px;
+  }
+  .rules-panel .rules-close:hover{color:var(--text);}
+  .card{
+    background:linear-gradient(180deg, var(--panel), var(--panel2));
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 20px 40px -20px rgba(0,0,0,.6);
+  }
+  .grid2{display:grid; grid-template-columns:1fr; gap:18px;}
+  @media(min-width:860px){ .grid2.game{grid-template-columns:minmax(0,560px) 1fr; align-items:start;} }
+  label{display:block; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px;}
+  input[type=text]{
+    width:100%; background:var(--bg2); border:1px solid var(--line); color:var(--text);
+    border-radius:10px; padding:11px 12px; font-size:15px; font-family:'Inter',sans-serif;
+  }
+  input[type=text]:focus{outline:2px solid var(--teal); outline-offset:1px;}
+  .row{display:flex; gap:10px; flex-wrap:wrap;}
+  .btn{
+    appearance:none; border:none; cursor:pointer; border-radius:10px; padding:11px 18px;
+    font-family:'Inter',sans-serif; font-weight:700; font-size:14px; letter-spacing:.01em;
+    transition:transform .12s ease, filter .12s ease; color:#08202c;
+    background:linear-gradient(180deg,#38e2c9,var(--teal));
+  }
+  .btn:hover{filter:brightness(1.08); transform:translateY(-1px);}
+  .btn:active{transform:translateY(0);}
+  .btn:disabled{opacity:.4; cursor:not-allowed; filter:none; transform:none;}
+  .btn.secondary{background:transparent; color:var(--text); border:1px solid var(--line);}
+  .btn.coral{background:linear-gradient(180deg,#ff8163,var(--coral)); color:#2a0e06;}
+  .btn.ghost{background:transparent; color:var(--muted); border:1px dashed var(--line); font-weight:600;}
+  .btn.small{padding:7px 12px; font-size:12.5px; border-radius:8px;}
+  .pill{
+    display:inline-flex; align-items:center; gap:6px; background:var(--bg2); border:1px solid var(--line);
+    border-radius:999px; padding:5px 12px; font-size:12.5px; color:var(--muted);
+  }
+  .toggle-row{display:flex; gap:8px;}
+  .toggle{
+    flex:1; text-align:center; padding:9px 6px; border-radius:9px; border:1px solid var(--line);
+    background:var(--bg2); color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .toggle.active{background:linear-gradient(180deg,#38e2c9,var(--teal)); color:#08202c; border-color:transparent;}
+  .opp-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px;
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px; margin-bottom:8px;
+  }
+  .swatch{width:14px; height:14px; border-radius:50%; flex:none;}
+  .divider{height:1px; background:var(--line); margin:18px 0;}
+  .code-box{
+    font-family:'Fraunces',serif; font-weight:800; font-size:30px; letter-spacing:.18em;
+    background:var(--bg2); border:1px dashed var(--teal); border-radius:12px; padding:12px 18px;
+    text-align:center; color:var(--teal);
+  }
+  .countdown{
+    font-family:'Fraunces',serif; font-weight:900; font-size:52px; letter-spacing:.04em;
+    color:var(--coral); line-height:1; font-variant-numeric:tabular-nums;
+    text-shadow:0 4px 20px rgba(255,107,74,.35);
+  }
+  .muted{color:var(--muted); font-size:13.5px; line-height:1.5;}
+  .center-text{text-align:center;}
+  .tabs{display:flex; gap:8px; margin-bottom:18px; justify-content:center;}
+  .tab-btn{padding:9px 20px; border-radius:999px; border:1px solid var(--line); background:var(--bg2); color:var(--muted); cursor:pointer; font-weight:700; font-size:13.5px;}
+  .tab-btn.active{background:linear-gradient(180deg,#ff8163,var(--coral)); color:#2a0e06; border-color:transparent;}
+
+  /* board */
+  .board-wrap{width:100%;}
+  .board{
+    position:relative; width:100%; max-width:500px; aspect-ratio:1;
+    display:grid; grid-template-columns:repeat(13,1fr); grid-template-rows:repeat(13,1fr);
+    gap:2.2px; background:var(--sea-line); border:6px solid #06141e; border-radius:16px; padding:2.2px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.03), 0 30px 60px -30px rgba(0,0,0,.8);
+  }
+  .cell{position:relative; background:var(--sea); border-radius:2px; overflow:visible;}
+  .cell.path{background:var(--path);}
+  .cell.t{background:var(--path);}
+  .cell.corner{background:#0e3a52; border-radius:5px;}
+  .cell.start{border-radius:5px;}
+  .cell.home{border-radius:2px;}
+  .cell.prisonnum{background:var(--danger); border-radius:4px;}
+  .cell.prisonnum .cell-label{position:absolute; inset:auto; top:1px; left:2px; display:block; color:#fff; opacity:1; font-size:11px;}
+  .badge{
+    position:absolute; top:-6px; right:-6px; width:16px; height:16px; border-radius:50%;
+    background:var(--danger); color:#fff; font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 4px rgba(0,0,0,.4); z-index:5;
+  }
+  .badge.sky-badge{background:#0e3a52; border:1px solid var(--teal); color:var(--teal);}
+  .cell-label{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:800; color:var(--ink); opacity:.55;}
+  .arrow-icon{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff;}
+  .cell-tokens{position:absolute; inset:1px; display:flex; flex-wrap:wrap; align-content:center; justify-content:center; gap:1px; z-index:4;}
+  .token-dot{
+    width:46%; height:46%; min-width:7px; min-height:7px; border-radius:50%;
+    border:2px solid rgba(255,255,255,.95);
+    box-shadow:0 1px 4px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.3);
+    transition:transform .15s ease;
+  }
+  .token-dot.selectable{
+    outline:3px solid #fff; outline-offset:2px; cursor:pointer; z-index:6;
+    animation:pulseToken 0.9s infinite; transform-origin:center;
+  }
+  @keyframes pulseToken{
+    0%,100%{ filter:brightness(1) saturate(1); transform:scale(1); box-shadow:0 1px 4px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.3), 0 0 0 0 rgba(255,255,255,.6); }
+    50%{ filter:brightness(1.55) saturate(1.3); transform:scale(1.35); box-shadow:0 2px 10px rgba(0,0,0,.7), 0 0 0 1px rgba(0,0,0,.3), 0 0 14px 4px rgba(255,255,255,.55); }
+  }
+  @keyframes pulse{0%,100%{filter:brightness(1)} 50%{filter:brightness(1.4)}}
+  .sky-center{
+    grid-column:6/9; grid-row:6/9; position:relative; z-index:3;
+    display:flex; align-items:center; justify-content:center; border-radius:14px;
+  }
+  .sky-blob{
+    width:88%; height:78%; border-radius:52% 48% 55% 45%/55% 45% 55% 45%;
+    background:radial-gradient(circle at 35% 30%, #2a6f8f, #0e3a52 65%, #0a2c3f);
+    display:flex; align-items:center; justify-content:center; position:relative;
+    box-shadow:0 0 0 2px rgba(45,212,191,.25), 0 10px 30px -10px rgba(0,0,0,.7);
+    animation:breathe 4s ease-in-out infinite;
+  }
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+  .sky-tokens{position:absolute; inset:0; display:flex; flex-wrap:wrap; align-content:center; justify-content:center; gap:2px; padding:14px; z-index:2;}
+  .diag-svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:2;}
+  .sky-label{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1;
+    font-family:'Fraunces',serif; font-size:10px; font-weight:700; color:#bfe9e6;
+    letter-spacing:.06em; text-align:center; text-transform:uppercase; white-space:nowrap;
+  }
+  .sky-dir{
+    position:absolute; width:17px; height:17px; border-radius:50%; background:#0e3a52; border:1px solid var(--teal);
+    color:var(--teal); font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center; z-index:2;
+  }
+  .sky-dir.tl{top:8%; left:8%;} .sky-dir.tr{top:8%; right:8%;}
+  .sky-dir.br{bottom:8%; right:8%;} .sky-dir.bl{bottom:8%; left:8%;}
+
+  .board-yard-grid{
+    display:grid;
+    grid-template-columns: minmax(40px,60px) 1fr minmax(40px,60px);
+    grid-template-rows: minmax(48px,66px) auto minmax(48px,66px);
+    gap:6px; align-items:center; justify-items:center; width:100%;
+  }
+  .yard{display:flex; align-items:center; justify-content:center;}
+  .yard-top{grid-column:2; grid-row:1;} .yard-bottom{grid-column:2; grid-row:3;}
+  .yard-left{grid-column:1; grid-row:2;} .yard-right{grid-column:3; grid-row:2;}
+  .board-slot{grid-column:2; grid-row:2; width:100%; display:flex; justify-content:center;}
+  .yard-inner{display:flex; align-items:center; justify-content:center; gap:6px;}
+  .yard-inner-top, .yard-inner-bottom{flex-direction:column;}
+  .yard-inner-left, .yard-inner-right{flex-direction:row;}
+  .yard-name{font-size:10px; font-weight:700; white-space:nowrap; letter-spacing:.02em; transition:all .2s ease;}
+  .yard-name-active{
+    font-size:11.5px; text-shadow:0 0 8px currentColor, 0 0 16px currentColor;
+    animation:namePulse 1.4s ease-in-out infinite;
+  }
+  @keyframes namePulse{0%,100%{opacity:1;} 50%{opacity:.55;}}
+  .yard-name-top, .yard-name-bottom{writing-mode:horizontal-tb; max-width:90px; overflow:hidden; text-overflow:ellipsis;}
+  .yard-name-left, .yard-name-right{writing-mode:vertical-rl; text-orientation:upright;}
+  .yard-dots{display:flex; flex-wrap:wrap; justify-content:center; gap:4px; max-width:40px;}
+  .yard-slot{
+    width:14px; height:14px; border-radius:50%; background:transparent;
+    border:2px dashed rgba(255,255,255,.25); box-sizing:border-box;
+  }
+  .yard-slot.filled{border-style:solid; border-color:rgba(255,255,255,.85); box-shadow:0 1px 4px rgba(0,0,0,.6);}
+  .yard-slot.selectable{outline:3px solid #fff; outline-offset:2px; cursor:pointer; animation:pulseToken 0.9s infinite; z-index:6; position:relative;}
+
+  /* game side panel */
+  .players-panel{display:flex; flex-direction:column; gap:10px;}
+  .player-card{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:14px;
+    background:var(--bg2); border:1px solid var(--line);
+  }
+  .player-card.current{border-color:var(--teal); box-shadow:0 0 0 1px var(--teal), 0 8px 20px -10px rgba(45,212,191,.5);}
+  .player-card.finished{opacity:.55;}
+  .p-swatch{width:30px; height:30px; border-radius:50%; flex:none; box-shadow:inset 0 0 0 2px rgba(255,255,255,.3);}
+  .p-info{flex:1; min-width:0;}
+  .p-name{font-weight:700; font-size:14px; display:flex; align-items:center; gap:6px;}
+  .p-meta{font-size:12px; color:var(--muted);}
+  .p-tokens-mini{display:flex; gap:4px;}
+  .mini-dot{width:9px; height:9px; border-radius:50%; background:var(--line);}
+  .mini-dot.home{background:var(--gold);}
+  .dice-area{display:flex; flex-direction:column; align-items:center; gap:12px; padding:18px 0 4px;}
+  .dice{
+    width:84px; height:84px; border-radius:20px; background:linear-gradient(180deg,#fff,#dfe9ea);
+    display:flex; align-items:center; justify-content:center; font-size:42px; font-weight:800; color:var(--ink);
+    box-shadow:0 10px 24px -10px rgba(0,0,0,.6);
+  }
+  .dice.rolling{animation:roll .45s ease infinite;}
+  @keyframes roll{0%{transform:rotate(0) scale(1)}50%{transform:rotate(180deg) scale(1.08)}100%{transform:rotate(360deg) scale(1)}}
+  .dice-pips{display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); width:74%; height:74%;}
+  .pip{width:15px; height:15px; border-radius:50%; background:var(--ink); justify-self:center; align-self:center; box-shadow:inset 0 1px 2px rgba(0,0,0,.45);}
+  .dice-q{font-size:34px; font-weight:800; color:var(--ink);}
+  .log-box{
+    margin-top:14px; max-height:150px; overflow-y:auto; font-size:12.5px; color:var(--muted);
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:10px 12px;
+    display:flex; flex-direction:column-reverse; gap:4px;
+  }
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(4,12,18,.72); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal{
+    background:linear-gradient(180deg, var(--panel), var(--panel2)); border:1px solid var(--line); border-radius:16px;
+    padding:24px; max-width:360px; text-align:center;
+  }
+  .action-hint{
+    text-align:center; font-size:13.5px; color:var(--gold); min-height:18px; font-weight:600;
+  }
+  .footer-note{text-align:center; color:var(--muted); font-size:12px; margin-top:22px; line-height:1.6;}
+  a{color:var(--teal);}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============================== ГЕОМЕТРИЯ ПОЛЯ ============================== */
+const RING_LEN = 48;
+const LAST_RING_REL = 48;   // фишка снова проходит через свою стартовую клетку, завершая круг
+const HOME_START_REL = 49;  // с этого шага фишка сворачивает в свой Дом
+const FINISH_REL = 52;      // точный приход в Дом
+const STARTS = [6, 18, 30, 42];
+const CORNERS = [ {abs:0, num:2}, {abs:12, num:3}, {abs:24, num:4}, {abs:36, num:5} ];
+const CORNER_ABS = CORNERS.map(c=>c.abs);
+const PRISON_T = [ {abs:3,num:2},{abs:9,num:2}, {abs:15,num:3},{abs:21,num:3}, {abs:27,num:4},{abs:33,num:4}, {abs:39,num:5},{abs:45,num:5} ];
+const PRISON_ABS = PRISON_T.map(p=>p.abs);
+const PLAYER_COLORS = ['#ff2f6e','#00e6c3','#ffd400','#a238ff'];
+const PLAYER_NAMES_FALLBACK = ['Игрок 1','Игрок 2','Игрок 3','Игрок 4'];
+
+function prisonNumFor(abs){ const f = PRISON_T.find(p=>p.abs===abs); return f ? f.num : null; }
+function cornerNumFor(abs){ const f = CORNERS.find(c=>c.abs===abs); return f ? f.num : null; }
+function ringAbsToRC(abs){
+  abs = ((abs % 48) + 48) % 48;
+  if(abs < 12) return {r:0, c:abs};
+  if(abs < 24) return {r:abs-12, c:12};
+  if(abs < 36) return {r:12, c:12-(abs-24)};
+  return {r:12-(abs-36), c:0};
+}
+function homeRC(playerIdx, homeIdx){
+  switch(playerIdx){
+    case 0: return {r:1+homeIdx, c:6};
+    case 1: return {r:6, c:11-homeIdx};
+    case 2: return {r:11-homeIdx, c:6};
+    case 3: return {r:6, c:1+homeIdx};
+  }
+}
+function tokenAbs(playerIdx, rel){ return (STARTS[playerIdx] + rel) % 48; }
+
+const boardMeta = {};
+function bkey(r,c){ return r+','+c; }
+function interiorAdjacent(r,c){
+  if(r===0) return {r:1,c};
+  if(r===12) return {r:11,c};
+  if(c===0) return {r,c:1};
+  if(c===12) return {r,c:11};
+  return {r,c};
+}
+for(let abs=0; abs<48; abs++){
+  const {r,c} = ringAbsToRC(abs);
+  let type='path', playerIdx=null, badge=null, cornerIdx=null;
+  if(CORNER_ABS.includes(abs)){ type='corner'; badge=cornerNumFor(abs); cornerIdx=CORNERS.findIndex(cc=>cc.abs===abs); }
+  else if(PRISON_ABS.includes(abs)){ type='t'; badge=prisonNumFor(abs); }
+  else if(STARTS.includes(abs)){ type='start'; playerIdx=STARTS.indexOf(abs); }
+  boardMeta[bkey(r,c)] = {type, playerIdx, badge, cornerIdx, abs};
+}
+for(let p=0;p<4;p++){
+  for(let h=0;h<4;h++){
+    const {r,c} = homeRC(p,h);
+    boardMeta[bkey(r,c)] = {type:'home', playerIdx:p, homeIdx:h};
+  }
+}
+PRISON_T.forEach(pt=>{
+  const {r,c} = ringAbsToRC(pt.abs);
+  const inner = interiorAdjacent(r,c);
+  boardMeta[bkey(inner.r,inner.c)] = {type:'prisonnum', badge:pt.num, fromAbs:pt.abs};
+});
+
+/* ============================== ИГРОВОЙ ДВИЖОК ============================== */
+function freshTokens(){
+  return [0,1,2,3].map(()=>({state:'base', rel:null, prisonNum:null, originAbs:null, homeSlot:null}));
+}
+
+function legalActions(room, playerIdx, dice){
+  const tokens = room.tokens[playerIdx];
+  const actions = [];
+  tokens.forEach((t, ti)=>{
+    if(t.state==='base'){
+      if(dice===6) actions.push({ti, type:'enter', label:'Ввести новую фишку в игру'});
+    } else if(t.state==='prison'){
+      if(dice===t.prisonNum) actions.push({ti, type:'exitPrison', label:'Выйти из тюрьмы'});
+    } else if(t.state==='sky'){
+      const corner = CORNERS.find(c=>c.num===dice);
+      if(corner) actions.push({ti, type:'exitSky', cornerAbs:corner.abs, label:'Вылететь из Неба'});
+    } else if(t.state==='path'){
+      const newRel = t.rel + dice;
+      if(newRel<=FINISH_REL) actions.push({ti, type:'move', newRel, label:'Ходить фишкой №'+(ti+1)});
+    }
+  });
+  return actions;
+}
+
+function applyCaptures(room, playerIdx, abs){
+  const captured = [];
+  room.tokens.forEach((toks, pi)=>{
+    if(pi===playerIdx) return;
+    toks.forEach(t=>{
+      if(t.state==='path' && t.rel!==null && t.rel<=LAST_RING_REL){
+        if(tokenAbs(pi, t.rel)===abs){
+          t.rel = 0;
+          captured.push(pi);
+        }
+      }
+    });
+  });
+  return captured;
+}
+
+function assignHomeSlot(room, playerIdx){
+  const taken = room.tokens[playerIdx]
+    .filter(t=>t.state==='finished' && t.homeSlot!=null)
+    .map(t=>t.homeSlot);
+  for(let i=0;i<4;i++){ if(!taken.includes(i)) return i; }
+  return 3;
+}
+
+function performAction(room, playerIdx, action){
+  const tok = room.tokens[playerIdx][action.ti];
+  let landedAbs = null;
+  let captured = [];
+  if(action.type==='enter'){
+    tok.state='path'; tok.rel=0; landedAbs = STARTS[playerIdx];
+    captured = captured.concat(applyCaptures(room, playerIdx, landedAbs));
+  } else if(action.type==='exitPrison'){
+    tok.rel = ((tok.originAbs - STARTS[playerIdx]) % 48 + 48) % 48;
+    tok.state='path'; tok.prisonNum=null; tok.originAbs=null;
+    landedAbs = tokenAbs(playerIdx, tok.rel);
+    captured = captured.concat(applyCaptures(room, playerIdx, landedAbs));
+  } else if(action.type==='exitSky'){
+    tok.rel = ((action.cornerAbs - STARTS[playerIdx]) % 48 + 48) % 48;
+    tok.state='path';
+    landedAbs = action.cornerAbs;
+    captured = captured.concat(applyCaptures(room, playerIdx, landedAbs));
+  } else if(action.type==='move'){
+    const fromRel = tok.rel;
+    tok.rel = action.newRel;
+    if(tok.rel>=HOME_START_REL){
+      landedAbs = null;
+      if(tok.rel===FINISH_REL){ tok.state='finished'; tok.homeSlot = assignHomeSlot(room, playerIdx); }
+    } else {
+      landedAbs = tokenAbs(playerIdx, tok.rel);
+    }
+    // "обгон": фишка сбивает соперников на КАЖДОЙ клетке пути, а не только на финальной
+    const lastRingIdx = Math.min(tok.rel, LAST_RING_REL);
+    for(let idx=fromRel+1; idx<=lastRingIdx; idx++){
+      captured = captured.concat(applyCaptures(room, playerIdx, tokenAbs(playerIdx, idx)));
+    }
+  }
+  let cornerChoice = null;
+  if(landedAbs!==null && tok.state!=='finished'){
+    if(action.type!=='exitPrison' && PRISON_ABS.includes(landedAbs)){
+      tok.state='prison'; tok.prisonNum = prisonNumFor(landedAbs); tok.originAbs = landedAbs; tok.rel=null;
+    } else if(action.type!=='exitSky' && CORNER_ABS.includes(landedAbs)){
+      cornerChoice = {ti:action.ti, abs:landedAbs};
+    }
+  }
+  return {captured, cornerChoice};
+}
+
+function playerFinished(room, idx){
+  return room.tokens[idx].every(t=>t.state==='finished');
+}
+
+function nextActivePlayer(room){
+  const n = room.totalPlayers;
+  let idx = room.currentPlayerIndex;
+  for(let i=0;i<n;i++){
+    idx = (idx+1)%n;
+    if(!room.finishOrder.includes(idx)) return idx;
+  }
+  return room.currentPlayerIndex;
+}
+
+function simulateCaptureCount(room, playerIdx, action){
+  const countAt = (abs)=>{
+    let n=0;
+    room.tokens.forEach((toks,pi)=>{
+      if(pi===playerIdx) return;
+      toks.forEach(t=>{ if(t.state==='path' && t.rel!==null && t.rel<=LAST_RING_REL && tokenAbs(pi,t.rel)===abs) n++; });
+    });
+    return n;
+  };
+  if(action.type==='move'){
+    const tok = room.tokens[playerIdx][action.ti];
+    const fromRel = tok.rel;
+    const lastRingIdx = Math.min(action.newRel, LAST_RING_REL);
+    let total = 0;
+    for(let idx=fromRel+1; idx<=lastRingIdx; idx++){ total += countAt(tokenAbs(playerIdx, idx)); }
+    return total;
+  }
+  if(action.type==='enter') return countAt(STARTS[playerIdx]);
+  if(action.type==='exitPrison') return countAt(room.tokens[playerIdx][action.ti].originAbs);
+  if(action.type==='exitSky') return countAt(action.cornerAbs);
+  return 0;
+}
+
+function landsInOwnPrison(room, playerIdx, action){
+  if(action.type!=='move' || action.newRel>=HOME_START_REL) return false;
+  return PRISON_ABS.includes(tokenAbs(playerIdx, action.newRel));
+}
+
+function botChooseAction(room, playerIdx, actions){
+  const scored = actions.map(a=>{
+    const captures = simulateCaptureCount(room, playerIdx, a);
+    const finishes = a.type==='move' && a.newRel===FINISH_REL;
+    const prisonRisk = landsInOwnPrison(room, playerIdx, a);
+    let progress = 0;
+    if(a.type==='move') progress = a.newRel;
+    else if(a.type==='enter') progress = 20;
+
+    let score = captures*1000;      // главный приоритет — отправить соперника на старт
+    if(finishes) score += 500;      // довести фишку до Дома — меньше ходов до победы
+    if(a.type==='exitPrison') score += 300;  // как можно скорее выйти из тюрьмы
+    if(a.type==='exitSky') score += 150;     // не задерживаться в Небе без нужды
+    score += progress;              // из похожих ходов — тот, что ведёт дальше по кратчайшему пути
+    if(prisonRisk) score -= 400;    // не лезть в тюрьму, если это не оправдано выгодой хода
+
+    return {a, score};
+  });
+  scored.sort((x,y)=>y.score-x.score);
+  return scored[0].a;
+}
+
+/* ============================== ХРАНИЛИЩЕ / СИНХРОНИЗАЦИЯ (Firebase) ============================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyB9POTl6hmeAvZ3beyHk4_lxGQ31ey87ow",
+  authDomain: "karakatica.firebaseapp.com",
+  databaseURL: "https://karakatica-default-rtdb.firebaseio.com",
+  projectId: "karakatica",
+  storageBucket: "karakatica.firebasestorage.app",
+  messagingSenderId: "551644046644",
+  appId: "1:551644046644:web:e62b9ca86e148ee3e03161"
+};
+firebase.initializeApp(firebaseConfig);
+const fbDb = firebase.database();
+const ROOMS_PATH = 'rooms';
+
+async function loadRoom(code){
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      const snap = await fbDb.ref(ROOMS_PATH+'/'+code).once('value');
+      return snap.exists() ? snap.val() : null;
+    }
+    catch(e){ if(attempt<2) await new Promise(res=>setTimeout(res, 400*(attempt+1))); }
+  }
+  return null;
+}
+async function saveRoom(code, room){
+  room.updatedAt = Date.now();
+  for(let attempt=0; attempt<3; attempt++){
+    try{ await fbDb.ref(ROOMS_PATH+'/'+code).set(room); return true; }
+    catch(e){
+      console.error('save error (attempt '+(attempt+1)+')', e);
+      if(attempt<2) await new Promise(res=>setTimeout(res, 400*(attempt+1)));
+    }
+  }
+  return false;
+}
+function genCode(){
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s=''; for(let i=0;i<4;i++) s += alphabet[Math.floor(Math.random()*alphabet.length)];
+  return s;
+}
+async function listActiveRooms(){
+  try{
+    const snap = await fbDb.ref(ROOMS_PATH).once('value');
+    if(!snap.exists()) return [];
+    const val = snap.val();
+    const rooms = Object.keys(val).map(k=>val[k]).filter(r=>r && (r.status==='lobby' || r.status==='playing'));
+    rooms.sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0));
+    return rooms.slice(0, 8);
+  }catch(e){ return []; }
+}
+
+/* ============================== СОСТОЯНИЕ КЛИЕНТА ============================== */
+const clientId = 'c'+Math.random().toString(36).slice(2)+Date.now();
+let screen = 'home'; // home | create | joinName | lobby | game
+let myName = '';
+let myIdx = null; // null = зритель
+let roomCode = null;
+let room = null;
+let lastUpdatedAt = 0;
+let pollHandle = null;
+let joinNameInput = '';
+let pendingJoinCode = null;
+let activeRooms = [];
+let homeListHandle = null;
+let homeTickHandle = null;
+let awaitingCornerChoice = null; // {ti, abs}
+let botBusy = false;
+
+/* dice pip rendering (real die face instead of digits) */
+const PIP_POS = { tl:[1,1], tr:[1,3], ml:[2,1], mm:[2,2], mr:[2,3], bl:[3,1], br:[3,3] };
+const PIP_LAYOUT = {
+  1:['mm'], 2:['tl','br'], 3:['tl','mm','br'], 4:['tl','tr','bl','br'],
+  5:['tl','tr','mm','bl','br'], 6:['tl','tr','ml','mr','bl','br']
+};
+function diceFaceHTML(value){
+  if(value==='?') return '<span class="dice-q">?</span>';
+  if(value==null) return '<span class="dice-q">—</span>';
+  const pts = PIP_LAYOUT[value] || [];
+  return '<div class="dice-pips">'+pts.map(p=>{
+    const [row,col] = PIP_POS[p];
+    return '<span class="pip" style="grid-row:'+row+';grid-column:'+col+';"></span>';
+  }).join('')+'</div>';
+}
+
+function el(html){ const t=document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
+function fmtName(p, idx){ return (p && p.name) ? p.name : PLAYER_NAMES_FALLBACK[idx]; }
+
+/* ============================== СОЗДАНИЕ / ПРИСОЕДИНЕНИЕ ============================== */
+const ROOM_WAIT_MS = 5*60*1000;
+const BOT_NAME_POOL = ['Александр','Мария','Дмитрий','Елена','Иван','Ольга','Сергей','Анна','Николай','Татьяна','Михаил','Екатерина','Андрей','Наталья','Пётр','Юлия','Игорь','Светлана','Максим','Ирина'];
+function pickBotName(usedNames){
+  const free = BOT_NAME_POOL.filter(n=>!usedNames.includes(n));
+  const pool = free.length ? free : BOT_NAME_POOL;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+let creatingRoom = false;
+async function createRoomNow(){
+  if(creatingRoom) return;
+  const name = myName.trim();
+  if(!name){ alert('Введите имя, под которым будете играть.'); return; }
+  creatingRoom = true;
+  setCreateBtnDisabled(true);
+  try{
+    const players = [
+      {type:'human', name, claimedBy:clientId},
+      {type:'empty', name:null, claimedBy:null},
+      {type:'empty', name:null, claimedBy:null},
+      {type:'empty', name:null, claimedBy:null},
+    ];
+    const code = genCode();
+    const newRoom = {
+      code, totalPlayers:4, players,
+      status:'lobby', startsAt: Date.now()+ROOM_WAIT_MS, startLock:null,
+      tokens:null, currentPlayerIndex:0, dice:null, rolling:false, awaitingMove:false,
+      finishOrder:[], log:[], botTurnLock:null, updatedAt:Date.now()
+    };
+    const ok = await saveRoom(code, newRoom);
+    if(!ok){ alert('Не удалось создать комнату. Попробуйте ещё раз.'); return; }
+    roomCode = code; myIdx = 0; room = newRoom; lastUpdatedAt = newRoom.updatedAt;
+    screen = 'lobby';
+    startPolling();
+    render();
+    startWaitingTick();
+  } finally {
+    creatingRoom = false;
+    setCreateBtnDisabled(false);
+  }
+}
+function setCreateBtnDisabled(v){
+  const b = document.getElementById('do-create');
+  if(b) b.disabled = v;
+}
+
+function promptJoinRoom(code){
+  pendingJoinCode = code;
+  joinNameInput = '';
+  stopHomeUpdates();
+  screen = 'joinName';
+  render();
+}
+
+async function confirmJoinRoom(){
+  const code = pendingJoinCode;
+  const name = joinNameInput.trim();
+  if(!name){ alert('Введите имя, под которым будете играть.'); return; }
+  const r = await loadRoom(code);
+  if(!r){ alert('Комната больше не существует.'); screen='home'; startHomeUpdates(); render(); return; }
+  if(r.status!=='lobby'){ alert('Игра в этой комнате уже началась.'); screen='home'; startHomeUpdates(); render(); return; }
+  const openIdx = r.players.findIndex(p=>p.type==='empty');
+  if(openIdx===-1){ alert('В комнате больше нет свободных мест.'); screen='home'; startHomeUpdates(); render(); return; }
+  r.players[openIdx] = {type:'human', name, claimedBy:clientId};
+  const ok = await saveRoom(code, r);
+  if(!ok){ alert('Не удалось подключиться. Попробуйте ещё раз.'); return; }
+  roomCode = code; myIdx = openIdx; room = r; lastUpdatedAt = r.updatedAt;
+  screen = 'lobby';
+  startPolling();
+  render();
+  startWaitingTick();
+}
+
+async function spectateRoom(code){
+  const r = await loadRoom(code);
+  if(!r){ alert('Комната больше не существует.'); return; }
+  stopHomeUpdates();
+  roomCode = code; myIdx = null; room = r; lastUpdatedAt = r.updatedAt;
+  screen = (r.status==='playing') ? 'game' : 'lobby';
+  startPolling();
+  render();
+  if(screen==='lobby') startWaitingTick();
+}
+
+/* ============================== СПИСОК КОМНАТ НА ГЛАВНОЙ ============================== */
+async function refreshActiveRoomsList(){
+  activeRooms = await listActiveRooms();
+  if(screen==='home') render();
+  const stale = activeRooms.filter(r=> r.status==='lobby' && r.startsAt && Date.now()>=r.startsAt);
+  for(const r of stale){
+    const finalized = await finalizeExpiredRoom(r.code, r);
+    if(finalized){
+      const idx = activeRooms.findIndex(x=>x.code===r.code);
+      if(idx!==-1) activeRooms[idx] = finalized;
+    }
+  }
+  if(stale.length && screen==='home') render();
+}
+async function cleanupStaleRooms(){
+  try{
+    const snap = await fbDb.ref(ROOMS_PATH).once('value');
+    if(!snap.exists()) return;
+    const val = snap.val();
+    const now = Date.now();
+    for(const code of Object.keys(val)){
+      const r = val[code];
+      if(!r) continue;
+      const age = now - (r.updatedAt||0);
+      const dead = r.status==='ended'
+        || (r.status==='lobby' && age > 20*60*1000)
+        || (r.status==='playing' && age > 6*60*60*1000);
+      if(dead){ try{ await fbDb.ref(ROOMS_PATH+'/'+code).remove(); }catch(e){} }
+    }
+  }catch(e){ /* best-effort cleanup, safe to ignore failures */ }
+}
+
+function startHomeUpdates(){
+  stopHomeUpdates();
+  refreshActiveRoomsList();
+  cleanupStaleRooms();
+  homeListHandle = setInterval(refreshActiveRoomsList, 4000);
+  homeTickHandle = setInterval(updateHomeCountdowns, 1000);
+}
+function stopHomeUpdates(){
+  if(homeListHandle){ clearInterval(homeListHandle); homeListHandle=null; }
+  if(homeTickHandle){ clearInterval(homeTickHandle); homeTickHandle=null; }
+}
+function updateHomeCountdowns(){
+  activeRooms.forEach(r=>{
+    if(r.status!=='lobby' || !r.startsAt) return;
+    const el = document.getElementById('room-countdown-'+r.code);
+    if(!el) return;
+    const remain = Math.max(0, r.startsAt - Date.now());
+    const mm = Math.floor(remain/60000), ss = Math.floor((remain%60000)/1000);
+    el.textContent = String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+  });
+}
+
+async function finalizeExpiredRoom(code, roomObj){
+  if(!roomObj || roomObj.status!=='lobby' || !roomObj.startsAt) return null;
+  if(Date.now() < roomObj.startsAt) return null;
+  const now = Date.now();
+  if(roomObj.startLock && (now - roomObj.startLock.ts) < 4000) return null;
+  roomObj.startLock = {holder:clientId, ts:now};
+  await saveRoom(code, roomObj);
+  await new Promise(r=>setTimeout(r, 300));
+  const fresh = await loadRoom(code);
+  if(!fresh || fresh.status!=='lobby' || !fresh.startLock || fresh.startLock.holder!==clientId){ return null; }
+  const finalized = fresh;
+  const usedNames = finalized.players.filter(p=>p.name).map(p=>p.name);
+  finalized.players = finalized.players.map(p=>{
+    if(p.type==='empty'){
+      const name = pickBotName(usedNames);
+      usedNames.push(name);
+      return {type:'bot', name, claimedBy:null};
+    }
+    return p;
+  });
+  finalized.status='playing';
+  finalized.tokens = finalized.players.map(()=>freshTokens());
+  finalized.currentPlayerIndex = 0;
+  finalized.dice = null;
+  finalized.rolling = false;
+  finalized.awaitingMove = false;
+  finalized.finishOrder = [];
+  finalized.log = ['Игра началась. Первый ход — у '+fmtName(finalized.players[0],0)+'.'];
+  finalized.startLock = null;
+  await saveRoom(code, finalized);
+  return finalized;
+}
+
+async function tryFinalizeRoomStart(){
+  if(!room || !roomCode) return;
+  const finalized = await finalizeExpiredRoom(roomCode, room);
+  if(!finalized) return;
+  room = finalized;
+  if(screen==='lobby'){ screen='game'; stopWaitingTick(); }
+  render();
+}
+
+function leaveToHome(){
+  stopPolling();
+  stopWaitingTick();
+  screen='home'; room=null; roomCode=null; myIdx=null;
+  render();
+  startHomeUpdates();
+}
+
+/* ============================== ТАЙМЕР ОЖИДАНИЯ ============================== */
+let waitingTickHandle = null;
+function startWaitingTick(){
+  stopWaitingTick();
+  updateCountdownDisplay();
+  waitingTickHandle = setInterval(()=>{
+    updateCountdownDisplay();
+    tryFinalizeRoomStart();
+  }, 1000);
+}
+function stopWaitingTick(){ if(waitingTickHandle){ clearInterval(waitingTickHandle); waitingTickHandle=null; } }
+function updateCountdownDisplay(){
+  const el = document.getElementById('countdown-timer');
+  if(!el || !room || !room.startsAt) return;
+  const remain = Math.max(0, room.startsAt - Date.now());
+  const mm = Math.floor(remain/60000);
+  const ss = Math.floor((remain%60000)/1000);
+  el.textContent = String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+}
+
+/* ============================== ОПРОС СОСТОЯНИЯ ============================== */
+function startPolling(){
+  stopPolling();
+  pollHandle = setInterval(async ()=>{
+    if(!roomCode) return;
+    const r = await loadRoom(roomCode);
+    if(r && r.updatedAt !== lastUpdatedAt){
+      room = r; lastUpdatedAt = r.updatedAt;
+      if(screen==='lobby' && room.status==='playing'){ screen='game'; stopWaitingTick(); }
+      render();
+    }
+    maybeRunBotTurn();
+    tryFinalizeRoomStart();
+  }, 1400);
+}
+function stopPolling(){ if(pollHandle){ clearInterval(pollHandle); pollHandle=null; } }
+
+/* ============================== ХОД ИГРОКА-ЧЕЛОВЕКА ============================== */
+function setDiceFace(rolling, valueOrQ){
+  const d = document.getElementById('dice-face');
+  if(!d) return;
+  d.classList.toggle('rolling', !!rolling);
+  d.innerHTML = diceFaceHTML(valueOrQ);
+}
+function setHintText(text){
+  const h = document.getElementById('hint');
+  if(h) h.textContent = text;
+}
+function setRollBtnDisabled(v){
+  const b = document.getElementById('roll-btn');
+  if(b) b.disabled = v;
+}
+
+async function rollDiceLocal(){
+  if(room.currentPlayerIndex !== myIdx) return;
+  if(room.awaitingMove || room.rolling) return;
+  if(awaitingCornerChoice) return;
+  setRollBtnDisabled(true);
+  setHintText('Бросаем кубик…');
+  setDiceFace(true, '?');
+  room.rolling = true;
+  await saveRoom(roomCode, room);
+  await new Promise(r=>setTimeout(r, 500));
+  const value = 1 + Math.floor(Math.random()*6);
+  room.dice = value;
+  room.rolling = false;
+  setDiceFace(false, value);
+  const actions = legalActions(room, myIdx, value);
+  if(actions.length===0){
+    room.awaitingMove = false;
+    room.log.unshift(fmtName(room.players[myIdx],myIdx)+' бросил '+value+' — доступных ходов нет, ход переходит дальше.');
+    trimLog();
+    passTurn();
+    await saveRoom(roomCode, room);
+    render();
+    return;
+  }
+  room.awaitingMove = true;
+  setHintText('Выпало '+value+'. Нажмите на подсвеченную фишку.');
+  await saveRoom(roomCode, room);
+  render();
+}
+
+function trimLog(){ if(room.log.length>24) room.log.length = 24; }
+
+function passTurn(){
+  room.currentPlayerIndex = nextActivePlayer(room);
+}
+
+async function chooseTokenAction(action){
+  if(room.currentPlayerIndex !== myIdx) return;
+  const {captured, cornerChoice} = performAction(room, myIdx, action);
+  logActionResult(myIdx, action, captured);
+  room.awaitingMove = false;
+  if(playerFinished(room, myIdx) && !room.finishOrder.includes(myIdx)){
+    room.finishOrder.push(myIdx);
+    room.log.unshift('🏆 '+fmtName(room.players[myIdx],myIdx)+' завёл все фишки в Дом!');
+  }
+  if(cornerChoice){
+    awaitingCornerChoice = cornerChoice;
+    room.currentPlayerIndex = room.currentPlayerIndex; // держим ход, ждём решения
+    await saveRoom(roomCode, room);
+    render();
+    return;
+  }
+  finalizeTurnAdvance();
+  await saveRoom(roomCode, room);
+  render();
+}
+
+function logActionResult(playerIdx, action, captured){
+  const nm = fmtName(room.players[playerIdx], playerIdx);
+  let base = nm;
+  if(action.type==='enter') base += ' ввёл новую фишку в игру.';
+  else if(action.type==='exitPrison') base += ' вышел из тюрьмы.';
+  else if(action.type==='exitSky') base += ' вылетел из Неба.';
+  else base += ' сделал ход.';
+  room.log.unshift(base);
+  captured.forEach(pi=>{ room.log.unshift('💥 Фишка игрока «'+fmtName(room.players[pi],pi)+'» отправлена на старт!'); });
+  trimLog();
+}
+
+function finalizeTurnAdvance(){
+  const remaining = room.totalPlayers - room.finishOrder.length;
+  if(remaining<=1){
+    if(remaining===1){
+      const last = [0,1,2,3].slice(0,room.totalPlayers).find(i=>!room.finishOrder.includes(i));
+      if(last!==undefined) room.finishOrder.push(last);
+    }
+    room.status='ended';
+    room.log.unshift('Игра завершена!');
+    return;
+  }
+  passTurn();
+}
+
+async function resolveCornerChoice(fly){
+  if(!awaitingCornerChoice) return;
+  const {ti} = awaitingCornerChoice;
+  const tok = room.tokens[myIdx][ti];
+  if(fly){ tok.state='sky'; room.log.unshift(fmtName(room.players[myIdx],myIdx)+' улетает в Небо! 🌀'); }
+  else { room.log.unshift(fmtName(room.players[myIdx],myIdx)+' остаётся на синей клетке.'); }
+  trimLog();
+  awaitingCornerChoice = null;
+  finalizeTurnAdvance();
+  await saveRoom(roomCode, room);
+  render();
+}
+
+/* ============================== ХОД БОТА ============================== */
+async function maybeRunBotTurn(){
+  if(!room || room.status!=='playing' || botBusy) return;
+  const cur = room.currentPlayerIndex;
+  const curPlayer = room.players[cur];
+  if(!curPlayer || curPlayer.type!=='bot') return;
+  const now = Date.now();
+  if(room.botTurnLock && (now - room.botTurnLock.ts) < 4000) return;
+  botBusy = true;
+  room.botTurnLock = {holder:clientId, ts:now, idx:cur};
+  await saveRoom(roomCode, room);
+  await new Promise(r=>setTimeout(r, 20));
+  const fresh = await loadRoom(roomCode);
+  if(!fresh || !fresh.botTurnLock || fresh.botTurnLock.holder!==clientId || fresh.botTurnLock.idx!==cur || fresh.status!=='playing' || fresh.currentPlayerIndex!==cur){
+    botBusy = false; return;
+  }
+  room = fresh;
+  await new Promise(r=>setTimeout(r, 15));
+  room.rolling = true;
+  room.awaitingMove = false;
+  await saveRoom(roomCode, room);
+  render();
+  await new Promise(r=>setTimeout(r, 375));
+  const value = 1 + Math.floor(Math.random()*6);
+  room.dice = value;
+  room.rolling = false;
+  await saveRoom(roomCode, room);
+  render();
+  await new Promise(r=>setTimeout(r, 150));
+  const actions = legalActions(room, cur, value);
+  if(actions.length===0){
+    room.log.unshift(fmtName(room.players[cur],cur)+' бросил '+value+' — ходов нет.');
+  } else {
+    const action = botChooseAction(room, cur, actions);
+    const {captured, cornerChoice} = performAction(room, cur, action);
+    logActionResult(cur, action, captured);
+    if(playerFinished(room, cur) && !room.finishOrder.includes(cur)){
+      room.finishOrder.push(cur);
+      room.log.unshift('🏆 '+fmtName(room.players[cur],cur)+' завёл все фишки в Дом!');
+    }
+    if(cornerChoice){
+      const fly = true;
+      const tok = room.tokens[cur][cornerChoice.ti];
+      if(fly){ tok.state='sky'; room.log.unshift(fmtName(room.players[cur],cur)+' улетает в Небо! 🌀'); }
+    }
+  }
+  trimLog();
+  room.botTurnLock = null;
+  finalizeTurnAdvance();
+  await saveRoom(roomCode, room);
+  botBusy = false;
+  render();
+}
+
+/* ============================== РЕНДЕР ============================== */
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  app.appendChild(renderBrand());
+  if(screen==='home'){ app.appendChild(renderHome()); updateHomeCountdowns(); }
+  else if(screen==='create') app.appendChild(renderCreate());
+  else if(screen==='joinName') app.appendChild(renderJoinName());
+  else if(screen==='lobby'){ app.appendChild(renderLobby()); updateCountdownDisplay(); }
+  else if(screen==='game') app.appendChild(renderGame());
+  if(awaitingCornerChoice && room && room.currentPlayerIndex===myIdx && screen==='game'){
+    app.appendChild(renderCornerModal());
+  }
+}
+
+function renderBrand(){
+  const brand = el(`<div class="brand">
+    <div class="logo">🦑</div>
+    <div>
+      <h1>Каракатица</h1>
+      <div class="sub">настольная игра · онлайн</div>
+    </div>
+    <button class="btn secondary small rules-btn" id="open-rules-btn">📖 Правила</button>
+  </div>`);
+  brand.querySelector('#open-rules-btn').onclick = ()=>{ if(window.__openRules) window.__openRules(); };
+  return brand;
+}
+
+function renderHome(){
+  const wrap = document.createElement('div');
+  const intro = el(`<div class="card center-text">
+    <h2 style="margin-bottom:6px;">Добро пожаловать!</h2>
+    <p class="muted" style="max-width:440px; margin:8px auto 22px;">Заведи все четыре фишки в Дом раньше других — по кругу через 48 клеток или коротким путём через Небо. Играй с друзьями с разных устройств или против ботов.</p>
+    <div class="row" style="justify-content:center;">
+      <button class="btn" id="go-create">Создать комнату</button>
+    </div>
+  </div>`);
+  intro.querySelector('#go-create').onclick = ()=>{ stopHomeUpdates(); screen='create'; render(); };
+  wrap.appendChild(intro);
+
+  wrap.appendChild(el('<div style="height:16px;"></div>'));
+
+  const listCard = el(`<div class="card">
+    <h3 style="margin-bottom:14px;">Активные комнаты</h3>
+    <div id="room-list"></div>
+  </div>`);
+  const listEl = listCard.querySelector('#room-list');
+  if(!activeRooms.length){
+    listEl.appendChild(el('<p class="muted">Пока нет открытых комнат — создайте свою!</p>'));
+  } else {
+    activeRooms.forEach(r=>{
+      const joined = r.players.filter(p=>p.type==='human').length;
+      const row = el(`<div class="opp-row">
+        <div>
+          <div style="font-weight:700;">Комната <span style="color:var(--teal); letter-spacing:.1em;">${r.code}</span></div>
+          <div class="muted" style="font-size:12px; margin-top:2px;">${joined}/4 игроков ${r.status==='playing' ? '· игра идёт' : '· ожидание'}</div>
+        </div>
+        ${r.status==='lobby'
+          ? `<div style="display:flex; align-items:center; gap:10px;"><span class="pill" id="room-countdown-${r.code}">--:--</span><button class="btn small coral" data-join="${r.code}">Присоединиться</button></div>`
+          : `<button class="btn small secondary" data-spectate="${r.code}">👁 Смотреть</button>`
+        }
+      </div>`);
+      const joinBtn = row.querySelector('[data-join]');
+      if(joinBtn) joinBtn.onclick = ()=> promptJoinRoom(r.code);
+      const specBtn = row.querySelector('[data-spectate]');
+      if(specBtn) specBtn.onclick = ()=> spectateRoom(r.code);
+      listEl.appendChild(row);
+    });
+  }
+  wrap.appendChild(listCard);
+  return wrap;
+}
+
+function renderCreate(){
+  const wrap = el(`<div class="card">
+    <h3 style="margin-bottom:16px;">Новая комната</h3>
+    <label>Ваше имя</label>
+    <input type="text" id="name-input" placeholder="Как вас представить другим игрокам" value="${myName}">
+    <p class="muted" style="margin-top:10px;">В комнате 4 места. У вас будет 5 минут, чтобы собрать друзей по коду комнаты — свободные места к началу игры займут боты.</p>
+    <div class="divider"></div>
+    <div class="row" style="justify-content:space-between;">
+      <button class="btn ghost" id="back-home">← Назад</button>
+      <button class="btn coral" id="do-create">Создать комнату</button>
+    </div>
+  </div>`);
+  wrap.querySelector('#name-input').oninput = (e)=>{ myName = e.target.value; };
+  wrap.querySelector('#back-home').onclick = ()=>{ screen='home'; render(); startHomeUpdates(); };
+  wrap.querySelector('#do-create').onclick = createRoomNow;
+  return wrap;
+}
+
+function renderJoinName(){
+  const wrap = el(`<div class="card">
+    <h3 style="margin-bottom:4px;">Присоединиться к комнате</h3>
+    <p class="muted" style="margin-bottom:16px;">Комната <span style="color:var(--teal); font-weight:700;">${pendingJoinCode}</span></p>
+    <label>Ваше имя</label>
+    <input type="text" id="jname-input" placeholder="Как вас представить другим игрокам" value="${joinNameInput}">
+    <div class="divider"></div>
+    <div class="row" style="justify-content:space-between;">
+      <button class="btn ghost" id="back-home">← Назад</button>
+      <button class="btn coral" id="do-join">Войти в комнату</button>
+    </div>
+  </div>`);
+  wrap.querySelector('#jname-input').oninput = (e)=>{ joinNameInput = e.target.value; };
+  wrap.querySelector('#back-home').onclick = ()=>{ screen='home'; render(); startHomeUpdates(); };
+  wrap.querySelector('#do-join').onclick = confirmJoinRoom;
+  return wrap;
+}
+
+function renderLobby(){
+  const wrap = el(`<div class="card center-text">    <h3 style="margin-bottom:4px;">Комната создана</h3>
+    <p class="muted" style="margin-bottom:14px;">Отправьте код друзьям, чтобы они присоединились с других устройств.</p>
+    <div class="code-box">${roomCode}</div>
+    <div style="height:18px;"></div>
+    <div class="muted" style="text-transform:uppercase; letter-spacing:.1em; font-size:11px; margin-bottom:6px;">До начала игры</div>
+    <div class="countdown" id="countdown-timer">--:--</div>
+    <p class="muted" style="margin-top:8px;">Когда время выйдет, свободные места займут боты, и игра начнётся автоматически.</p>
+    <div class="divider"></div>
+    <div id="lobby-players" style="text-align:left;"></div>
+    <div class="divider"></div>
+    <button class="btn ghost" id="leave-btn">Покинуть комнату</button>
+  </div>`);
+  const list = wrap.querySelector('#lobby-players');
+  room.players.forEach((p,i)=>{
+    const label = p.type==='human' ? (p.name || 'Игрок') : p.type==='bot' ? (p.name||'Бот') : 'Ожидание игрока…';
+    const row = el(`<div class="opp-row">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="swatch" style="background:${PLAYER_COLORS[i]}"></span>
+        <span>${label}${i===0?' (хост)':''}${p.claimedBy===clientId?' — это вы':''}</span>
+      </div>
+      ${p.type==='empty' ? '<span class="pill">свободно</span>' : ''}
+    </div>`);
+    list.appendChild(row);
+  });
+  wrap.querySelector('#leave-btn').onclick = leaveToHome;
+  return wrap;
+}
+
+function renderCornerModal(){
+  const overlay = el(`<div class="modal-overlay">
+    <div class="modal">
+      <div style="font-size:34px; margin-bottom:6px;">🌀</div>
+      <h3 style="margin-bottom:10px;">Улететь в Небо?</h3>
+      <p class="muted" style="margin-bottom:18px;">Вы остановились на синей угловой клетке. Можно перелететь в центр поля и позже вылететь в нужном направлении, или остаться и продолжать по кругу.</p>
+      <div class="row" style="justify-content:center;">
+        <button class="btn secondary" id="stay-btn">Остаться</button>
+        <button class="btn coral" id="fly-btn">Улететь</button>
+      </div>
+    </div>
+  </div>`);
+  overlay.querySelector('#stay-btn').onclick = ()=>resolveCornerChoice(false);
+  overlay.querySelector('#fly-btn').onclick = ()=>resolveCornerChoice(true);
+  return overlay;
+}
+
+function renderGame(){
+  if(room.status==='ended') return renderEnd();
+  const wrap = el(`<div class="grid2 game"></div>`);
+  wrap.appendChild(renderBoardPanel());
+  wrap.appendChild(renderSidePanel());
+  return wrap;
+}
+
+function renderBoardPanel(){
+  const panel = el(`<div class="card board-wrap">
+    <div class="board-yard-grid">
+      <div class="yard yard-top" id="yard-0"></div>
+      <div class="yard yard-right" id="yard-1"></div>
+      <div class="yard yard-bottom" id="yard-2"></div>
+      <div class="yard yard-left" id="yard-3"></div>
+      <div class="board-slot"><div class="board" id="board"></div></div>
+    </div>
+  </div>`);
+  const board = panel.querySelector('#board');
+  for(let r=0;r<13;r++){
+    for(let c=0;c<13;c++){
+      if(r>=5 && r<=7 && c>=5 && c<=7) continue;
+      const meta = boardMeta[bkey(r,c)];
+      const cell = document.createElement('div');
+      cell.style.gridRow = (r+1);
+      cell.style.gridColumn = (c+1);
+      cell.className = 'cell';
+      if(meta){
+        cell.classList.add(meta.type);
+        if(meta.type==='start'){
+          cell.style.background = PLAYER_COLORS[meta.playerIdx];
+          cell.innerHTML = '<div class="arrow-icon" style="transform:rotate('+(meta.playerIdx*90)+'deg);">➜</div>';
+        }
+        else if(meta.type==='home'){ cell.style.background = hexAlpha(PLAYER_COLORS[meta.playerIdx], meta.homeIdx===3?0.95:0.55); if(meta.homeIdx===3) cell.innerHTML='<div class="cell-label" style="color:#fff;opacity:.9;">★</div>'; }
+        else if(meta.type==='t'){ cell.innerHTML = '<div class="cell-label">Т</div>'; }
+        else if(meta.type==='prisonnum'){ cell.innerHTML = '<div class="cell-label">'+meta.badge+'</div>'; }
+        else if(meta.type==='corner'){ /* clean cell — no arrow or number here anymore */ }
+      }
+      const tokLayer = document.createElement('div');
+      tokLayer.className = 'cell-tokens';
+      cell.appendChild(tokLayer);
+      board.appendChild(cell);
+    }
+  }
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 13 13');
+  svg.setAttribute('class','diag-svg');
+  svg.innerHTML = '<defs><marker id="skyArrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="0.5" markerHeight="0.5" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2dd4bf" fill-opacity="0.85"></path></marker></defs>';
+  CORNERS.forEach(cn=>{
+    const rc = ringAbsToRC(cn.abs);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', rc.c+0.5); line.setAttribute('y1', rc.r+0.5);
+    line.setAttribute('x2', 6.5); line.setAttribute('y2', 6.5);
+    line.setAttribute('stroke','#2dd4bf'); line.setAttribute('stroke-opacity','0.45');
+    line.setAttribute('stroke-width','0.09'); line.setAttribute('stroke-dasharray','0.18,0.14');
+    line.setAttribute('marker-start','url(#skyArrowHead)');
+    line.setAttribute('marker-end','url(#skyArrowHead)');
+    svg.appendChild(line);
+  });
+  board.appendChild(svg);
+  const skyDiv = document.createElement('div');
+  skyDiv.className = 'sky-center';
+  const dirClasses = ['tl','tr','br','bl'];
+  const dirBadges = CORNERS.map((cn,i)=>'<span class="sky-dir '+dirClasses[i]+'">'+cn.num+'</span>').join('');
+  skyDiv.innerHTML = '<div class="sky-blob">'+dirBadges+'<div class="sky-tokens" id="sky-tokens"></div><span class="sky-label">Небо</span></div>';
+  board.appendChild(skyDiv);
+
+  placeTokens(board);
+  [0,1,2,3].forEach(pi=>{
+    const slot = panel.querySelector('#yard-'+pi);
+    if(slot) slot.appendChild(renderYard(pi));
+  });
+  return panel;
+}
+
+const YARD_SIDE_BY_PI = ['top','right','bottom','left'];
+
+function renderYard(pi){
+  const side = YARD_SIDE_BY_PI[pi];
+  const outer = document.createElement('div');
+  outer.className = 'yard-inner yard-inner-'+side;
+  if(!room.players[pi]) return outer;
+
+  const label = document.createElement('div');
+  label.className = 'yard-name yard-name-'+side + (room.currentPlayerIndex===pi ? ' yard-name-active' : '');
+  label.textContent = fmtName(room.players[pi], pi);
+  label.style.color = PLAYER_COLORS[pi];
+
+  const dotsWrap = document.createElement('div');
+  dotsWrap.className = 'yard-dots';
+  const myTurn = room.currentPlayerIndex===myIdx && room.awaitingMove && !awaitingCornerChoice;
+  const actions = myTurn ? legalActions(room, myIdx, room.dice) : [];
+  room.tokens[pi].forEach((t,ti)=>{
+    const slot = document.createElement('div');
+    slot.className = 'yard-slot';
+    if(t.state==='base'){
+      slot.classList.add('filled');
+      slot.style.background = PLAYER_COLORS[pi];
+      if(pi===myIdx){
+        const matching = actions.find(a=>a.type==='enter' && a.ti===ti);
+        if(matching){
+          slot.classList.add('selectable');
+          slot.title = matching.label;
+          slot.onclick = ()=>chooseTokenAction(matching);
+        }
+      }
+    } else {
+      slot.style.borderColor = hexAlpha(PLAYER_COLORS[pi], 0.35);
+    }
+    dotsWrap.appendChild(slot);
+  });
+
+  if(side==='top' || side==='left'){
+    outer.appendChild(label);
+    outer.appendChild(dotsWrap);
+  } else {
+    outer.appendChild(dotsWrap);
+    outer.appendChild(label);
+  }
+  return outer;
+}
+
+function hexAlpha(hex, alpha){
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function placeTokens(board){
+  const myTurn = room.currentPlayerIndex===myIdx && room.awaitingMove && !awaitingCornerChoice;
+  const actions = myTurn ? legalActions(room, myIdx, room.dice) : [];
+  const skyContainer = board.querySelector('#sky-tokens');
+  room.tokens.forEach((toks, pi)=>{
+    toks.forEach((t, ti)=>{
+      if(t.state==='base') return;
+      let r,c;
+      if(t.state==='sky'){
+        const dot = makeTokenDot(pi, ti, actions, 'exitSky');
+        skyContainer.appendChild(dot);
+        return;
+      } else if(t.state==='finished'){
+        const rc = homeRC(pi, t.homeSlot!=null ? t.homeSlot : 3); r=rc.r; c=rc.c;
+      } else if(t.state==='prison'){
+        const trc = ringAbsToRC(t.originAbs);
+        const rc = interiorAdjacent(trc.r, trc.c); r=rc.r; c=rc.c;
+      } else if(t.state==='path'){
+        if(t.rel<=LAST_RING_REL){ const rc = ringAbsToRC(tokenAbs(pi,t.rel)); r=rc.r; c=rc.c; }
+        else { const rc = homeRC(pi, t.rel-HOME_START_REL); r=rc.r; c=rc.c; }
+      }
+      const cellEl = findCell(board, r, c);
+      if(!cellEl) return;
+      const layer = cellEl.querySelector('.cell-tokens');
+      let actionType = null;
+      if(t.state==='prison') actionType='exitPrison';
+      else if(t.state==='path') actionType='move';
+      const dot = makeTokenDot(pi, ti, actions, actionType);
+      if(t.state==='prison') dot.style.opacity='0.75';
+      layer.appendChild(dot);
+    });
+  });
+}
+
+function findCell(board, r, c){
+  return Array.from(board.children).find(ch=> ch.classList && ch.classList.contains('cell') && parseInt(ch.style.gridRow)===r+1 && parseInt(ch.style.gridColumn)===c+1);
+}
+
+function makeTokenDot(pi, ti, actions, actionType){
+  const dot = document.createElement('div');
+  dot.className = 'token-dot';
+  dot.style.background = PLAYER_COLORS[pi];
+  const matching = actions.find(a=> a.ti===ti && (pi===myIdx) && (
+    (actionType==='move' && a.type==='move') ||
+    (actionType==='exitPrison' && a.type==='exitPrison') ||
+    (actionType==='exitSky' && a.type==='exitSky') ||
+    (actionType==='enter' && a.type==='enter')
+  ));
+  if(pi===myIdx && matching){
+    dot.classList.add('selectable');
+    dot.title = matching.label;
+    dot.onclick = ()=> chooseTokenAction(matching);
+  }
+  return dot;
+}
+
+function renderSidePanel(){
+  const panel = document.createElement('div');
+  const card = el(`<div class="card"></div>`);
+  if(myIdx===null){
+    card.appendChild(el('<div class="pill" style="margin-bottom:12px;">👁 Вы смотрите как зритель</div>'));
+  }
+  const pp = document.createElement('div');
+  pp.className = 'players-panel';
+  room.players.forEach((p,i)=>{
+    const isCur = room.currentPlayerIndex===i;
+    const isFin = room.finishOrder.includes(i);
+    const base = room.tokens[i].filter(t=>t.state==='base').length;
+    const homeCount = room.tokens[i].filter(t=>t.state==='finished').length;
+    const row = el(`<div class="player-card ${isCur?'current':''} ${isFin?'finished':''}">
+      <div class="p-swatch" style="background:${PLAYER_COLORS[i]}"></div>
+      <div class="p-info">
+        <div class="p-name">${fmtName(p,i)} ${p.claimedBy===clientId?'· вы':''} ${p.type==='bot'?'🤖':''}</div>
+        <div class="p-meta">${isFin? 'финиш · место '+(room.finishOrder.indexOf(i)+1) : (isCur? 'ходит сейчас' : (base+' фишки ждут ввода'))}</div>
+      </div>
+      <div class="p-tokens-mini">${[0,1,2,3].map(ti=>`<div class="mini-dot ${room.tokens[i][ti].state==='finished'?'home':''}"></div>`).join('')}</div>
+    </div>`);
+    pp.appendChild(row);
+  });
+  card.appendChild(pp);
+
+  const diceArea = el(`<div class="dice-area">
+    <div class="dice ${room.rolling?'rolling':''}" id="dice-face">${diceFaceHTML(room.rolling ? '?' : room.dice)}</div>
+    <div class="action-hint" id="hint"></div>
+    <button class="btn coral" id="roll-btn">Бросить кубик</button>
+  </div>`);
+  card.appendChild(diceArea);
+
+  const myTurn = room.currentPlayerIndex===myIdx;
+  const rollBtn = diceArea.querySelector('#roll-btn');
+  const hint = diceArea.querySelector('#hint');
+  if(!myTurn){
+    rollBtn.disabled = true;
+    hint.textContent = room.rolling ? (fmtName(room.players[room.currentPlayerIndex], room.currentPlayerIndex)+' бросает кубик…') : ('Ход игрока: ' + fmtName(room.players[room.currentPlayerIndex], room.currentPlayerIndex));
+  } else if(awaitingCornerChoice){
+    rollBtn.disabled = true;
+    hint.textContent = 'Решите судьбу фишки на синей клетке ⬆';
+  } else if(room.rolling){
+    rollBtn.disabled = true;
+    hint.textContent = 'Бросаем кубик…';
+  } else if(room.awaitingMove){
+    rollBtn.disabled = true;
+    const actions = legalActions(room, myIdx, room.dice);
+    hint.textContent = actions.length ? 'Выпало '+room.dice+'. Нажмите на подсвеченную фишку.' : 'Нет доступных ходов…';
+  } else {
+    rollBtn.disabled = false;
+    hint.textContent = 'Ваш ход! Бросьте кубик.';
+    rollBtn.onclick = rollDiceLocal;
+  }
+
+  const logBox = el(`<div class="log-box"></div>`);
+  room.log.slice(0,20).forEach(line=>{ logBox.appendChild(el(`<div>${line}</div>`)); });
+  card.appendChild(logBox);
+
+  const leaveRow = el(`<div style="margin-top:14px; text-align:center;"><button class="btn ghost small" id="leave2">Выйти из игры</button></div>`);
+  leaveRow.querySelector('#leave2').onclick = leaveToHome;
+  card.appendChild(leaveRow);
+
+  panel.appendChild(card);
+  return panel;
+}
+
+function renderEnd(){
+  const wrap = el(`<div class="card center-text">
+    <div style="font-size:44px;">🏆</div>
+    <h2 style="margin:10px 0 16px;">Игра завершена!</h2>
+    <div id="rank-list" style="max-width:340px; margin:0 auto;"></div>
+    <div class="divider"></div>
+    <button class="btn coral" id="home-btn">На главный экран</button>
+  </div>`);
+  const list = wrap.querySelector('#rank-list');
+  room.finishOrder.forEach((pi, rank)=>{
+    const row = el(`<div class="opp-row">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="pill">#${rank+1}</span>
+        <span class="swatch" style="background:${PLAYER_COLORS[pi]}"></span>
+        <span>${fmtName(room.players[pi],pi)}</span>
+      </div>
+    </div>`);
+    list.appendChild(row);
+  });
+  wrap.querySelector('#home-btn').onclick = leaveToHome;
+  return wrap;
+}
+
+/* ============================== ПАНЕЛЬ ПРАВИЛ ============================== */
+function buildRulesPanel(){
+  const overlay = document.createElement('div');
+  overlay.className = 'rules-overlay';
+  overlay.id = 'rules-overlay';
+  const panel = document.createElement('div');
+  panel.className = 'rules-panel';
+  panel.id = 'rules-panel';
+  panel.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+      <h3>Правила игры «Каракатица»</h3>
+      <button class="rules-close" id="rules-close-btn">×</button>
+    </div>
+    <p style="color:var(--muted); font-size:12.5px; margin-bottom:6px;">2–4 игрока · от 6 лет · 30–45 минут</p>
+
+    <h4>Основные положения</h4>
+    <p>Игровое поле состоит из 48 клеток, расположенных по кругу, 4 «Домов» по 4 клетки каждый и центрального сектора «Небо». На поле также 8 клеток «Т» (они входят в те же 48) — рядом с каждой своя клетка «Тюрьма» с числом для выхода. У каждого игрока по 4 фишки, в игре участвует один кубик.</p>
+
+    <h4>Цель игры</h4>
+    <p>Провести все свои четыре фишки в «Дом» быстрее других — либо сделав полный круг по всем 48 клеткам, начиная со своей клетки старта, либо сократив путь через сектор «Небо». Игра продолжается, пока не останется один игрок.</p>
+
+    <h4>Как начать играть</h4>
+    <p>Каждый игрок выбирает один из 4 «Домов» — у него своя клетка старта, отмеченная цветом этого игрока. Чтобы ввести фишку в игру, нужно выбросить на кубике 6 очков — это ставит фишку на клетку старта; передвигаться она сможет со следующего броска. Первым ходит хост комнаты, затем — по очереди подключения игроков.</p>
+
+    <h4>Как играть</h4>
+    <p>Фишка перемещается на столько клеток, сколько выпало на кубике. За один ход можно двигать только одну фишку — делить очки между несколькими фишками нельзя. Если выпало 6, можно либо продвинуть фишку на 6 клеток, либо ввести в игру новую.</p>
+    <p><b>Тюрьма.</b> Остановившись на клетке «Т», фишка отправляется в соседнюю красную клетку «Тюрьма» с числом. Чтобы выйти, нужно на своём ходу выбросить именно это число — тогда фишка возвращается на клетку «Т» и продолжает путь дальше оттуда.</p>
+    <p><b>Точный заход в Дом.</b> Чтобы попасть в Дом, нужно точное количество шагов — фишка проходит полный круг и снова проходит через свою клетку старта, и только затем сворачивает в Дом. Если выпало больше, чем нужно, — фишка остаётся на месте, и игрок ходит другой фишкой. В Доме у каждой фишки — своя отдельная клетка: какая из 4 клеток свободна, ту и занимает пришедшая фишка; на одной клетке двум фишкам стоять нельзя.</p>
+    <p><b>Небо.</b> Остановившись на синей угловой клетке, можно улететь в сектор «Небо» или остаться на месте. Вылететь обратно на поле можно только выбросив на кубике число того направления, по которому вылетаешь.</p>
+    <p>Если у игрока есть возможность сходить — он обязан это сделать. Бывают ситуации, когда хода нет вовсе (например, все фишки в тюрьме, а нужное число не выпадает) — тогда ход переходит следующему игроку.</p>
+
+    <h4>Как выиграть</h4>
+    <p>Если фишка игрока останавливается на клетке, где стоит фишка соперника, или проходит через клетку с фишкой соперника по пути, — фишка соперника возвращается на свою клетку старта и начинает путь заново: выбрасывать 6 для этого уже не нужно, она и так в игре.</p>
+    <p>Клетки «Тюрьмы» и сектор «Небо» — безопасные: там фишки разных игроков могут стоять вместе. Побеждает тот, кто первым заведёт все четыре фишки в свой «Дом».</p>
+  `;
+  document.body.appendChild(overlay);
+  document.body.appendChild(panel);
+  function closePanel(){ overlay.classList.remove('open'); panel.classList.remove('open'); }
+  function openPanel(){ overlay.classList.add('open'); panel.classList.add('open'); }
+  overlay.onclick = closePanel;
+  panel.querySelector('#rules-close-btn').onclick = closePanel;
+  window.__openRules = openPanel;
+  window.__closeRules = closePanel;
+}
+buildRulesPanel();
+render();
+startHomeUpdates();
+</script>
+</body>
+</html>
