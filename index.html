@@ -162,11 +162,16 @@
     width:46%; height:46%; min-width:7px; min-height:7px; border-radius:50%;
     border:2px solid rgba(255,255,255,.95);
     box-shadow:0 1px 4px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.3);
-    transition:transform .15s ease;
+    transition:transform .15s ease; position:relative;
   }
   .token-dot.selectable{
     outline:3px solid #fff; outline-offset:2px; cursor:pointer; z-index:6;
     animation:pulseToken 0.9s infinite; transform-origin:center;
+  }
+  .token-dot.selectable::after{
+    content:''; position:absolute; inset:-6px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 72%);
+    z-index:-1; pointer-events:none;
   }
   @keyframes pulseToken{
     0%,100%{ filter:brightness(1) saturate(1); transform:scale(1); box-shadow:0 1px 4px rgba(0,0,0,.65), 0 0 0 1px rgba(0,0,0,.3), 0 0 0 0 rgba(255,255,255,.6); }
