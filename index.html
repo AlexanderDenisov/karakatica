@@ -703,6 +703,7 @@ async function refreshActiveRoomsList(){
   }
   if(stale.length && screen==='home') render();
 }
+const ROOM_INACTIVITY_MS = 5*60*1000;
 async function cleanupStaleRooms(){
   try{
     const snap = await fbDb.ref(ROOMS_PATH).once('value');
@@ -715,7 +716,7 @@ async function cleanupStaleRooms(){
       const age = now - (r.updatedAt||0);
       const dead = r.status==='ended'
         || (r.status==='lobby' && age > 20*60*1000)
-        || (r.status==='playing' && age > 6*60*60*1000);
+        || (r.status==='playing' && age > ROOM_INACTIVITY_MS);
       if(dead){ try{ await fbDb.ref(ROOMS_PATH+'/'+code).remove(); }catch(e){} }
     }
   }catch(e){ /* best-effort cleanup, safe to ignore failures */ }
@@ -814,6 +815,17 @@ function updateCountdownDisplay(){
 }
 
 /* ============================== ОПРОС СОСТОЯНИЯ ============================== */
+async function checkRoomInactivity(){
+  if(!room || room.status!=='playing' || !roomCode) return;
+  if(Date.now() - (room.updatedAt||0) < ROOM_INACTIVITY_MS) return;
+  const code = roomCode;
+  try{ await fbDb.ref(ROOMS_PATH+'/'+code).remove(); }catch(e){}
+  if(roomCode===code && screen==='game'){
+    alert('Комната закрыта: в ней не было ни одного хода больше 5 минут.');
+    leaveToHome();
+  }
+}
+
 function startPolling(){
   stopPolling();
   pollHandle = setInterval(async ()=>{
@@ -826,6 +838,7 @@ function startPolling(){
     }
     maybeRunBotTurn();
     tryFinalizeRoomStart();
+    checkRoomInactivity();
   }, 1400);
 }
 function stopPolling(){ if(pollHandle){ clearInterval(pollHandle); pollHandle=null; } }
@@ -953,13 +966,13 @@ async function maybeRunBotTurn(){
   botBusy = true;
   room.botTurnLock = {holder:clientId, ts:now, idx:cur};
   await saveRoom(roomCode, room);
-  await new Promise(r=>setTimeout(r, 20));
+  await new Promise(r=>setTimeout(r, 140));
   const fresh = await loadRoom(roomCode);
   if(!fresh || !fresh.botTurnLock || fresh.botTurnLock.holder!==clientId || fresh.botTurnLock.idx!==cur || fresh.status!=='playing' || fresh.currentPlayerIndex!==cur){
     botBusy = false; return;
   }
   room = fresh;
-  await new Promise(r=>setTimeout(r, 15));
+  await new Promise(r=>setTimeout(r, 100));
   room.rolling = true;
   room.awaitingMove = false;
   await saveRoom(roomCode, room);
@@ -970,7 +983,7 @@ async function maybeRunBotTurn(){
   room.rolling = false;
   await saveRoom(roomCode, room);
   render();
-  await new Promise(r=>setTimeout(r, 150));
+  await new Promise(r=>setTimeout(r, 300));
   const actions = legalActions(room, cur, value);
   if(actions.length===0){
     room.log.unshift(fmtName(room.players[cur],cur)+' бросил '+value+' — ходов нет.');
