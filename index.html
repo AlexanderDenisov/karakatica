@@ -350,6 +350,16 @@ function freshTokens(){
   return [0,1,2,3].map(()=>({state:'base', rel:null, prisonNum:null, originAbs:null, homeSlot:null}));
 }
 
+function occupiedHomeSlots(room, playerIdx, excludeTi){
+  const occupied = new Set();
+  room.tokens[playerIdx].forEach((t, idx)=>{
+    if(idx===excludeTi) return;
+    if(t.state==='finished' && t.homeSlot!=null) occupied.add(t.homeSlot);
+    else if(t.state==='path' && t.rel!=null && t.rel>=HOME_START_REL && t.rel<FINISH_REL) occupied.add(t.rel-HOME_START_REL);
+  });
+  return occupied;
+}
+
 function legalActions(room, playerIdx, dice){
   const tokens = room.tokens[playerIdx];
   const actions = [];
@@ -363,9 +373,17 @@ function legalActions(room, playerIdx, dice){
       if(corner) actions.push({ti, type:'exitSky', cornerAbs:corner.abs, label:'Вылететь из Неба'});
     } else if(t.state==='path'){
       const newRel = t.rel + dice;
-      if(newRel<=FINISH_REL) actions.push({ti, type:'move', newRel, label:'Ходить фишкой №'+(ti+1)});
+      if(newRel<=FINISH_REL){
+        // Клетки Дома (0-2, промежуточные) заняты только одной фишкой за раз — вперёд, но не на занятую клетку
+        const blocked = (newRel>=HOME_START_REL && newRel<FINISH_REL)
+          && occupiedHomeSlots(room, playerIdx, ti).has(newRel-HOME_START_REL);
+        if(!blocked) actions.push({ti, type:'move', newRel, label:'Ходить фишкой №'+(ti+1)});
+      }
     }
   });
+  // Если фишка уже стоит в Доме и может продвинуться хотя бы на клетку — это обязательный ход
+  const homeMoves = actions.filter(a=> a.type==='move' && tokens[a.ti].rel>=HOME_START_REL);
+  if(homeMoves.length) return homeMoves;
   return actions;
 }
 
@@ -385,11 +403,9 @@ function applyCaptures(room, playerIdx, abs){
   return captured;
 }
 
-function assignHomeSlot(room, playerIdx){
-  const taken = room.tokens[playerIdx]
-    .filter(t=>t.state==='finished' && t.homeSlot!=null)
-    .map(t=>t.homeSlot);
-  for(let i=0;i<4;i++){ if(!taken.includes(i)) return i; }
+function assignHomeSlot(room, playerIdx, excludeTi){
+  const occupied = occupiedHomeSlots(room, playerIdx, excludeTi);
+  for(let i=0;i<4;i++){ if(!occupied.has(i)) return i; }
   return 3;
 }
 
@@ -415,7 +431,7 @@ function performAction(room, playerIdx, action){
     tok.rel = action.newRel;
     if(tok.rel>=HOME_START_REL){
       landedAbs = null;
-      if(tok.rel===FINISH_REL){ tok.state='finished'; tok.homeSlot = assignHomeSlot(room, playerIdx); }
+      if(tok.rel===FINISH_REL){ tok.state='finished'; tok.homeSlot = assignHomeSlot(room, playerIdx, action.ti); }
     } else {
       landedAbs = tokenAbs(playerIdx, tok.rel);
     }
@@ -1463,7 +1479,7 @@ function buildRulesPanel(){
     <h4>Как играть</h4>
     <p>Фишка перемещается на столько клеток, сколько выпало на кубике. За один ход можно двигать только одну фишку — делить очки между несколькими фишками нельзя. Если выпало 6, можно либо продвинуть фишку на 6 клеток, либо ввести в игру новую.</p>
     <p><b>Тюрьма.</b> Остановившись на клетке «Т», фишка отправляется в соседнюю красную клетку «Тюрьма» с числом. Чтобы выйти, нужно на своём ходу выбросить именно это число — тогда фишка возвращается на клетку «Т» и продолжает путь дальше оттуда.</p>
-    <p><b>Точный заход в Дом.</b> Чтобы попасть в Дом, нужно точное количество шагов — фишка проходит полный круг и снова проходит через свою клетку старта, и только затем сворачивает в Дом. Если выпало больше, чем нужно, — фишка остаётся на месте, и игрок ходит другой фишкой. В Доме у каждой фишки — своя отдельная клетка: какая из 4 клеток свободна, ту и занимает пришедшая фишка; на одной клетке двум фишкам стоять нельзя.</p>
+    <p><b>Точный заход в Дом.</b> Чтобы попасть в Дом, нужно точное количество шагов — фишка проходит полный круг и снова проходит через свою клетку старта, и только затем сворачивает в Дом. Если выпало больше, чем нужно, — фишка остаётся на месте, и игрок ходит другой фишкой. В Доме 4 клетки (клетка со звёздочкой — тоже одна из них), и на каждой стоит только одна фишка: если нужная клетка уже занята своей же фишкой — сходить на неё нельзя, нужно выбрать другой ход. Двигаться внутри Дома можно только вперёд, назад — нельзя.</p>
     <p><b>Небо.</b> Остановившись на синей угловой клетке, можно улететь в сектор «Небо» или остаться на месте. Вылететь обратно на поле можно только выбросив на кубике число того направления, по которому вылетаешь.</p>
     <p>Если у игрока есть возможность сходить — он обязан это сделать. Бывают ситуации, когда хода нет вовсе (например, все фишки в тюрьме, а нужное число не выпадает) — тогда ход переходит следующему игроку.</p>
 
